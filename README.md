@@ -27,6 +27,18 @@ python sim/run_sim.py --demo
 
 Open http://localhost:8000. (Not 7000: on a Mac, AirPlay Receiver uses that port.) Click the simulator buttons to "show" items to the camera. Fridge time runs 600x faster than real time (change with `--speed`), so you can watch items move from fresh to eat soon to past shelf life within a few minutes.
 
+### With real recognition from your webcam
+
+`sim/webcam_detector.py` runs a YOLO detector on your laptop webcam and feeds the simulator, the same way the camera brick feeds the app on the UNO Q. The default model knows the 80 COCO objects, including banana, apple, orange, broccoli, carrot, sandwich, pizza, cake, bottle and cup.
+
+```bash
+pip3 install ultralytics opencv-python   # once
+python3 sim/run_sim.py                    # terminal 1
+python3 sim/webcam_detector.py            # terminal 2
+```
+
+Hold a banana or an apple in front of the camera. It appears in the list once, however long you hold it. Take it out of view for 2 seconds and show it again to add a second one, or switch to "Taking out" to remove it. On macOS, allow camera access for your terminal app when asked.
+
 Run the tests with `python -m pytest tests`.
 
 ## 2. Run it on the UNO Q

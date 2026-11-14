@@ -33,8 +33,12 @@ def test_item_added_after_consistent_frames_only():
     assert f.items == []                      # one frame is not enough
     frames(f, c, "banana", n=2)
     assert [i.label for i in f.items] == ["banana"]
-    frames(f, c, "banana", n=3)               # cooldown: no duplicate
+    frames(f, c, "banana", n=30)              # held in view for 6 s: still one item
     assert len(f.items) == 1
+    c.tick(3)                                 # leaves the view ...
+    f.on_detections({})
+    frames(f, c, "banana", n=3)               # ... and comes back: a second banana
+    assert len(f.items) == 2
 
 
 def test_non_food_ignored():

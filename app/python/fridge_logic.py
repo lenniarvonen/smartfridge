@@ -44,7 +44,7 @@ STATES = ["fresh", "eat_soon", "expired"]
 class Config:
     detect_min_hits: int = 3          # a label must be seen in this many frames ...
     detect_window_s: float = 2.0      # ... within this many seconds to count
-    detect_cooldown_s: float = 6.0    # then ignore that label for this long
+    rearm_gap_s: float = 2.0          # a label must be out of view this long before it can count again
     eat_soon_fraction: float = 0.25   # under 25% of shelf life left = eat soon
     eat_soon_min_days: float = 1.0    # ... or under 1 day left
     door_lux_threshold: float = 15.0  # interior light above this = door open
@@ -97,7 +97,8 @@ class FridgeGuardian:
         self.silenced_until = 0.0
         self.last_seen: dict[str, float] = {}   # label -> confidence of last frame
         self._hits: dict[str, deque[float]] = {}
-        self._cooldown: dict[str, float] = {}
+        self._counted: set[str] = set()       # labels counted and still in view
+        self._last_frame_seen: dict[str, float] = {}
         self._last_beep = 0.0
         self._load()
 
@@ -118,9 +119,15 @@ class FridgeGuardian:
             if (self.cfg.only_detect_when_door_open and self.lux is not None
                     and not self.door_open):
                 return changes
-            for raw in detections:
-                label = str(raw).strip().lower()
-                if label in IGNORED_LABELS or now < self._cooldown.get(label, 0.0):
+            seen_now = {str(k).strip().lower() for k in detections}
+            for label in seen_now:
+                self._last_frame_seen[label] = now
+            # Re-arm labels that have been out of view long enough
+            for label in list(self._counted):
+                if now - self._last_frame_seen.get(label, 0) >= self.cfg.rearm_gap_s:
+                    self._counted.discard(label)
+            for label in seen_now:
+                if label in IGNORED_LABELS or label in self._counted:
                     continue
                 hits = self._hits.setdefault(label, deque())
                 hits.append(now)
@@ -128,7 +135,7 @@ class FridgeGuardian:
                     hits.popleft()
                 if len(hits) >= self.cfg.detect_min_hits:
                     hits.clear()
-                    self._cooldown[label] = now + self.cfg.detect_cooldown_s
+                    self._counted.add(label)  # counted once until it leaves the view
                     if self._current_mode(now) == "out":
                         if self._remove_label(label, food_now):
                             changes.append(f"-{label}")

@@ -45,8 +45,9 @@ class SimClock:
 class FakeCamera:
     """Pretends the camera sees a label for a few frames, like a real detection."""
 
-    def __init__(self, fridge: FridgeGuardian, fps: float = 5.0):
+    def __init__(self, fridge: FridgeGuardian, webcam: "Webcam", fps: float = 5.0):
         self.fridge = fridge
+        self.webcam = webcam
         self.fps = fps
         self.queue: list[str] = []
         self.lock = threading.Lock()
@@ -60,17 +61,30 @@ class FakeCamera:
         while True:
             with self.lock:
                 label = self.queue.pop(0) if self.queue else None
-            dets = {label: [{"confidence": 0.86, "bounding_box_xyxy": (40, 40, 200, 220)}]} if label else {}
-            self.fridge.on_detections(dets)
+            if label:
+                self.fridge.on_detections({label: [{"confidence": 0.86, "bounding_box_xyxy": (40, 40, 200, 220)}]})
+            elif not self.webcam.active():  # empty frames, unless the real webcam is feeding us
+                self.fridge.on_detections({})
             time.sleep(1.0 / self.fps)
 
 
-def make_handler(fridge: FridgeGuardian, camera: FakeCamera, speed: float):
+class Webcam:
+    """Latest annotated frame posted by sim/webcam_detector.py."""
+
+    def __init__(self):
+        self.jpeg: bytes | None = None
+        self.ts = 0.0
+
+    def active(self) -> bool:
+        return self.jpeg is not None and time.time() - self.ts < 3
+
+
+def make_handler(fridge: FridgeGuardian, camera: FakeCamera, speed: float, webcam: Webcam):
     assets = os.path.join(APP, "assets")
 
     def state() -> dict:
         s = fridge.snapshot()
-        s["sim"] = {"speed": speed, "labels": SIM_LABELS}
+        s["sim"] = {"speed": speed, "labels": SIM_LABELS, "webcam": webcam.active()}
         return s
 
     class Handler(BaseHTTPRequestHandler):
@@ -89,6 +103,17 @@ def make_handler(fridge: FridgeGuardian, camera: FakeCamera, speed: float):
             url = urlparse(self.path)
             if url.path == "/api/state":
                 return self._json(state())
+            if url.path == "/api/sim/frame.jpg":
+                if not webcam.jpeg:
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("Content-Length", str(len(webcam.jpeg)))
+                self.end_headers()
+                self.wfile.write(webcam.jpeg)
+                return
             path = "index.html" if url.path in ("/", "") else url.path.lstrip("/")
             full = os.path.normpath(os.path.join(assets, path))
             if not full.startswith(assets) or not os.path.isfile(full):
@@ -121,6 +146,15 @@ def make_handler(fridge: FridgeGuardian, camera: FakeCamera, speed: float):
                 fridge.silence()
             elif route == "sim/show":
                 camera.show(q.get("label", "banana"))
+            elif route == "sim/detections":
+                # Posted by sim/webcam_detector.py: JSON {label: [{"confidence": ...}]}
+                length = int(self.headers.get("Content-Length", 0))
+                dets = json.loads(self.rfile.read(length) or b"{}")
+                return self._json({"ok": True, "changes": fridge.on_detections(dets)})
+            elif route == "sim/frame":
+                length = int(self.headers.get("Content-Length", 0))
+                webcam.jpeg, webcam.ts = self.rfile.read(length), time.time()
+                return self._json({"ok": True})
             else:
                 return self._json({"ok": False, "error": "unknown route"}, 404)
             return self._json({"ok": ok, "state": state()})
@@ -159,11 +193,12 @@ def main() -> None:
                 if it.id == item["id"]:
                     it.added_ts = now - days_ago * 86400
 
-    camera = FakeCamera(fridge)
+    webcam = Webcam()
+    camera = FakeCamera(fridge, webcam)
     threading.Thread(target=fake_sensors, args=(fridge,), daemon=True).start()
 
     try:
-        server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(fridge, camera, args.speed))
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(fridge, camera, args.speed, webcam))
     except OSError as exc:
         sys.exit(f"Port {args.port} is busy ({exc}). Try another one: python sim/run_sim.py --port 8080")
     print(f"Fridge Guardian simulator on http://localhost:{args.port}  (time x{args.speed:g}, Ctrl+C to stop)")

@@ -162,11 +162,27 @@ $('items').onclick = (ev) => {
 
 // ---- Simulator helpers (only shown when running sim/run_sim.py) -----------
 let simReady = false;
+let webcamTimer = null;
+function updateSimWebcam(s) {
+  const img = $('simWebcam');
+  if (s.sim.webcam && !webcamTimer) {
+    $('videoPlaceholder').style.display = 'none';
+    img.style.display = 'block';
+    webcamTimer = setInterval(() => { img.src = `/api/sim/frame.jpg?t=${Date.now()}`; }, 150);
+  } else if (!s.sim.webcam && webcamTimer) {
+    clearInterval(webcamTimer);
+    webcamTimer = null;
+    img.style.display = 'none';
+    $('videoPlaceholder').style.display = '';
+  }
+}
+
 function setupSim(s) {
+  if (s.sim) updateSimWebcam(s);
   if (simReady || !s.sim) return;
   simReady = true;
   $('simBox').style.display = '';
-  $('videoPlaceholder').textContent = 'Simulator: no camera. Use the buttons below.';
+  $('videoPlaceholder').textContent = 'Simulator: no camera. Run sim/webcam_detector.py, or use the buttons below.';
   $('simNote').textContent = `Time runs ${s.sim.speed}x faster than real time, so items age quickly.`;
   $('simButtons').innerHTML = s.sim.labels
     .map((l) => `<button class="ghost" data-label="${esc(l)}">${esc(nice(l))}</button>`).join('');
