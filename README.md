@@ -15,6 +15,8 @@ Built for Junction 2026, "Make Europe Green through Edge AI using Arduino".
 | `app/assets/` | Web page served on port 7000 |
 | `sim/run_sim.py` | Runs the same logic and web page on a laptop, no board needed |
 | `tools/prepare_dataset.py` | Prepares the Roboflow fridge dataset for Edge Impulse |
+| `tools/train_detector.py`, `tools/plot_benchmarks.py` | Fine-tune the detector, benchmark it, plot the results |
+| `models/`, `benchmarks/` | Fine-tuned model and its test results |
 | `tests/` | Unit tests for the logic |
 
 ## 1. Try it on your laptop now (no hardware)
@@ -90,6 +92,35 @@ Then:
 1. In Edge Impulse Studio, create an object detection project and go to Data acquisition > Upload data. Upload the `fridge-ei` folder (the COCO format is detected automatically).
 2. Train an object detection model and deploy it to the UNO Q from App Lab. Pick it in the Video Object Detection brick's settings.
 3. Add 30 to 50 photos of your own items from the door camera, then retrain. The dataset's photos are mostly whole-shelf shots, so this matters for single items held at the door.
+## Fine-tuned model and benchmarks
+
+`models/fridge_yolo11n.pt` is a YOLO11n detector fine-tuned on the fridge-only dataset (1,350 training images, 320 px, 23 epochs, about an hour on 2 CPU cores). Full results are in [`benchmarks/summary.md`](benchmarks/summary.md).
+
+| Test split (561 images, 4,411 boxes) | Result |
+| --- | --- |
+| mAP50 | 92.5% |
+| mAP50-95 | 64.9% |
+| mAP50 without near-duplicates of training images (436 images) | 92.1% |
+| Stock COCO YOLO11n vs fine-tuned, apple / banana / carrot AP50 | 1% / 22% / 9% vs 97% / 100% / 96% |
+| CPU inference | about 33 ms per image |
+
+![Per-class test AP50](benchmarks/per_class_ap50.png)
+![Stock vs fine-tuned](benchmarks/baseline_vs_tuned.png)
+![Training curves](benchmarks/training_curves.png)
+
+Eggplant (36%) and cucumber (80%) are the weakest classes; both have few training examples. The test images come from the same kind of whole-shelf fridge photos as the training data, so expect lower scores on a door camera until its own photos are added.
+
+Try it with your webcam: `python3 sim/webcam_detector.py --model models/fridge_yolo11n.pt`.
+
+Reproduce:
+
+```bash
+pip3 install ultralytics
+python3 tools/prepare_dataset.py ~/Downloads/FridgeFoodDetection ~/fridge-ei --max-images 1500
+python3 tools/train_detector.py ~/fridge-ei --work ~/fridge-train --epochs 30 --hours 1   # add --device mps on an Apple Silicon Mac
+python3 tools/plot_benchmarks.py ~/fridge-train --out benchmarks
+```
+
 ## Roadmap after v1
 
 - Spoilage gas sensor (BME688 or MQ-series) to catch food that goes off early
