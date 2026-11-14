@@ -18,15 +18,17 @@ from dataclasses import asdict, dataclass
 # Conservative rule-of-thumb defaults to rank "eat me first" - not food-safety
 # advice. Edit freely, or override per item from the web page.
 SHELF_LIFE_DAYS = {
-    # Labels the default object detector on the UNO Q (COCO classes) can see
-    "banana": 5, "apple": 21, "orange": 14, "broccoli": 4, "carrot": 21,
-    "sandwich": 2, "hot dog": 3, "pizza": 3, "donut": 3, "cake": 4,
-    "bottle": 7, "cup": 2, "bowl": 3,
-    # Labels you can add later with a custom Edge Impulse model
-    "milk": 5, "cheese": 21, "yogurt": 10, "eggs": 28, "butter": 30,
-    "salad": 4, "lettuce": 5, "tomato": 7, "cucumber": 7, "berries": 4,
-    "strawberry": 3, "leftovers": 3, "chicken": 2, "fish": 2, "meat": 3,
-    "ham": 5, "juice": 7,
+    # Labels from the custom Edge Impulse model (tools/prepare_dataset.py)
+    "milk": 5, "cheese": 14, "butter": 30, "egg": 21, "cream": 5,
+    "chicken": 2, "meat": 2, "ham": 4, "shrimp": 2,
+    "tomato": 7, "strawberry": 3, "blueberry": 7, "apple": 21, "banana": 5,
+    "citrus": 21, "carrot": 21, "green_beans": 5, "mushroom": 5,
+    "leafy_greens": 4, "cabbage": 14, "cucumber": 7, "bell_pepper": 7, "eggplant": 5,
+    # Labels the default COCO detector on the UNO Q can see
+    "orange": 14, "broccoli": 4, "sandwich": 2, "hot dog": 3, "pizza": 3,
+    "donut": 3, "cake": 4, "bottle": 7, "cup": 2, "bowl": 3,
+    # Other common items you can add by hand
+    "yogurt": 10, "eggs": 21, "salad": 4, "leftovers": 3, "fish": 2, "juice": 7,
 }
 DEFAULT_SHELF_DAYS = 5.0
 

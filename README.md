@@ -14,6 +14,7 @@ Built for Junction 2026, "Make Europe Green through Edge AI using Arduino".
 | `app/python/fridge_logic.py` | Inventory and shelf-life logic (plain Python, also used by the simulator and tests) |
 | `app/assets/` | Web page served on port 7000 |
 | `sim/run_sim.py` | Runs the same logic and web page on a laptop, no board needed |
+| `tools/prepare_dataset.py` | Prepares the Roboflow fridge dataset for Edge Impulse |
 | `tests/` | Unit tests for the logic |
 
 ## 1. Try it on your laptop now (no hardware)
@@ -61,15 +62,22 @@ The shelf life values are rough defaults for ranking what to eat first, not food
 
 ## Next step: your own food model
 
-To recognise milk cartons, cheese, yogurt or leftover boxes, train an object detection model in Edge Impulse:
+The Roboflow [FridgeFoodDetection](https://universe.roboflow.com/objectdetectionlearning-4empo/fridgefooddetection-cxnl3) COCO export has 6,339 images and 39 labels, including pantry items and duplicates. `tools/prepare_dataset.py` turns it into a fridge-only set of 23 labels that match the app's shelf-life table:
 
-1. Start from public fridge datasets, for example [aicook / FridgeFoodDetection](https://universe.roboflow.com/objectdetectionlearning-4empo/fridgefooddetection-cxnl3) and [FridgeItems_2](https://universe.roboflow.com/capstoneproject-yly17/fridgeitems_2) on Roboflow. Check each licence.
-2. Add 30 to 50 photos per item from your own fridge door camera.
-3. Train an object detection model in Edge Impulse and deploy it to the UNO Q from App Lab. Then pick it in the Video Object Detection brick's settings.
-4. Make sure the label names match the keys in `SHELF_LIFE_DAYS`, or add new keys.
+```bash
+python3 tools/prepare_dataset.py ~/Downloads/FridgeFoodDetection ~/Downloads/fridge-ei --max-images 1500
+```
 
-No code changes are needed: the logic works with whatever labels the model gives.
+- Keeps milk, cheese, butter, egg, cream, chicken, meat, ham, shrimp, tomato, strawberry, blueberry, apple, banana, citrus, carrot, green_beans, mushroom, leafy_greens, cabbage, cucumber, bell_pepper and eggplant.
+- Merges duplicates: heavy_cream + fresh cream to cream; beef + ground_beef + meat to meat; spinach + green leaves to leafy_greens; lime + lemon to citrus; goat_cheese to cheese.
+- Removes boxes for pantry items (flour, sugar, chocolate, bread, potato, sweet_potato, onion, ginger, corn, green chilly). The images stay, so the model learns to ignore those items.
+- `--max-images 1500` keeps 1,500 training and 300 testing images, which trains much faster in Edge Impulse. Leave it out to use everything (about 5,160 training images).
 
+Then:
+
+1. In Edge Impulse Studio, create an object detection project and go to Data acquisition > Upload data. Upload the `fridge-ei` folder (the COCO format is detected automatically).
+2. Train an object detection model and deploy it to the UNO Q from App Lab. Pick it in the Video Object Detection brick's settings.
+3. Add 30 to 50 photos of your own items from the door camera, then retrain. The dataset's photos are mostly whole-shelf shots, so this matters for single items held at the door.
 ## Roadmap after v1
 
 - Spoilage gas sensor (BME688 or MQ-series) to catch food that goes off early

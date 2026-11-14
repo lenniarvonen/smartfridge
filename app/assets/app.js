@@ -37,6 +37,8 @@ function fmtAdded(ts, ageDays) {
   return d.toLocaleString([], { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
+const nice = (l) => String(l).replace(/_/g, ' ');
+
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
@@ -67,8 +69,8 @@ let render = function (s) {
   if (sum.eat_first && (sum.level === 'eat_soon' || sum.level === 'expired')) {
     const f = sum.eat_first;
     text = f.days_left <= 0
-      ? `Eat or check the ${f.label} first: ${fmtDuration(f.days_left)} past its shelf life.`
-      : `Eat the ${f.label} first: ${fmtDuration(f.days_left)} left.`;
+      ? `Eat or check the ${nice(f.label)} first: ${fmtDuration(f.days_left)} past its shelf life.`
+      : `Eat the ${nice(f.label)} first: ${fmtDuration(f.days_left)} left.`;
   }
   $('bannerText').textContent = text;
   $('cFresh').textContent = sum.counts.fresh;
@@ -93,7 +95,7 @@ let render = function (s) {
     const first = sum.eat_first && sum.eat_first.id === it.id && it.state !== 'fresh';
     const left = it.days_left <= 0 ? `${fmtDuration(it.days_left)} over` : `${fmtDuration(it.days_left)} left`;
     return `<li class="item ${it.state}">
-      <div class="name">${esc(it.label)}${first ? '<span class="badge eat_first">eat first</span>' : ''}</div>
+      <div class="name">${esc(nice(it.label))}${first ? '<span class="badge eat_first">eat first</span>' : ''}</div>
       <div class="left">${left}</div>
       <button class="remove" data-id="${it.id}" title="Remove">✕</button>
       <div class="bar"><i style="width:${Math.round(it.used_fraction * 100)}%"></i></div>
@@ -167,7 +169,7 @@ function setupSim(s) {
   $('videoPlaceholder').textContent = 'Simulator: no camera. Use the buttons below.';
   $('simNote').textContent = `Time runs ${s.sim.speed}x faster than real time, so items age quickly.`;
   $('simButtons').innerHTML = s.sim.labels
-    .map((l) => `<button class="ghost" data-label="${esc(l)}">${esc(l)}</button>`).join('');
+    .map((l) => `<button class="ghost" data-label="${esc(l)}">${esc(nice(l))}</button>`).join('');
   $('simButtons').onclick = (ev) => {
     const b = ev.target.closest('button');
     if (b) api('sim/show', { label: b.dataset.label });

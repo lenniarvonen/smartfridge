@@ -26,8 +26,8 @@ sys.path.insert(0, os.path.join(APP, "python"))
 
 from fridge_logic import FridgeGuardian  # noqa: E402
 
-SIM_LABELS = ["banana", "apple", "orange", "broccoli", "carrot", "sandwich",
-              "pizza", "cake", "bottle", "milk", "cheese", "leftovers"]
+SIM_LABELS = ["milk", "cheese", "egg", "cream", "chicken", "shrimp", "strawberry",
+              "tomato", "leafy_greens", "banana", "apple", "butter"]
 
 
 class SimClock:
