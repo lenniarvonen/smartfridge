@@ -63,7 +63,8 @@ def load(path: str) -> dict:
         return json.load(f)
 
 
-def convert(src: str, out: str, max_images: int | None, keep_empty: float, seed: int) -> dict:
+def convert(src: str, out: str, max_images: int | None, keep_empty: float, seed: int,
+            max_test: int | None = None) -> dict:
     rnd = random.Random(seed)
     new_names = sorted({v for v in LABEL_MAP.values() if v})
     new_ids = {name: i for i, name in enumerate(new_names)}
@@ -93,7 +94,7 @@ def convert(src: str, out: str, max_images: int | None, keep_empty: float, seed:
                     continue
                 images.append((in_split, im, boxes))
 
-        limit = (max_images if out_split == "training" else max(1, max_images // 5)) if max_images else None
+        limit = max_images if out_split == "training" else max_test
         if limit and len(images) > limit:
             rnd.shuffle(images)
             images = images[:limit]
@@ -127,7 +128,8 @@ def main() -> None:
     ap.add_argument("src", help="unzipped Roboflow COCO export (has train/ valid/ test/)")
     ap.add_argument("out", help="output folder to create")
     ap.add_argument("--max-images", type=int, default=None,
-                    help="cap training images (testing gets a fifth of this); try 1500 on the free plan")
+                    help="cap training images; try 1500 on the Edge Impulse free plan")
+    ap.add_argument("--max-test", type=int, default=None, help="cap testing images (default: all)")
     ap.add_argument("--keep-empty", type=float, default=0.1,
                     help="share of images with no fridge food to keep as background (default 0.1)")
     ap.add_argument("--seed", type=int, default=42)
@@ -136,7 +138,7 @@ def main() -> None:
     src, out = os.path.expanduser(args.src), os.path.expanduser(args.out)
     if not os.path.isdir(os.path.join(src, "train")):
         sys.exit(f"{src} has no train/ folder. Point this at the unzipped Roboflow COCO export.")
-    report = convert(src, out, args.max_images, args.keep_empty, args.seed)
+    report = convert(src, out, args.max_images, args.keep_empty, args.seed, args.max_test)
     for split, r in report.items():
         print(f"{split}: {r['images']} images, {r['boxes']} boxes")
         print("   " + ", ".join(f"{k} {v}" for k, v in r["per_label"].items()))

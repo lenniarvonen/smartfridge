@@ -83,7 +83,7 @@ python3 tools/prepare_dataset.py ~/Downloads/FridgeFoodDetection ~/Downloads/fri
 - Keeps milk, cheese, butter, egg, cream, chicken, meat, ham, shrimp, tomato, strawberry, blueberry, apple, banana, citrus, carrot, green_beans, mushroom, leafy_greens, cabbage, cucumber, bell_pepper and eggplant.
 - Merges duplicates: heavy_cream + fresh cream to cream; beef + ground_beef + meat to meat; spinach + green leaves to leafy_greens; lime + lemon to citrus; goat_cheese to cheese.
 - Removes boxes for pantry items (flour, sugar, chocolate, bread, potato, sweet_potato, onion, ginger, corn, green chilly). The images stay, so the model learns to ignore those items.
-- `--max-images 1500` keeps 1,500 training and 300 testing images, which trains much faster in Edge Impulse. Leave it out to use everything (about 5,160 training images).
+- `--max-images 1500` keeps 1,500 training images (all 561 test images stay), which trains much faster in Edge Impulse. Leave it out to use everything (about 5,160 training images).
 
 Then:
 
