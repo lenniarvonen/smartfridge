@@ -3,7 +3,7 @@
 Uses the exact same fridge_logic.py and web page as the board. Only the
 camera, sensors and outputs are simulated. Standard library only.
 
-    python sim/run_sim.py                # open http://localhost:7000
+    python sim/run_sim.py                # open http://localhost:8000
     python sim/run_sim.py --speed 3600   # 1 real second = 1 hour in the fridge
     python sim/run_sim.py --demo         # pre-fill with a few items of different ages
 """
@@ -141,7 +141,8 @@ def fake_sensors(fridge: FridgeGuardian) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--port", type=int, default=7000)
+    ap.add_argument("--port", type=int, default=8000,
+                    help="default 8000 (macOS uses port 7000 for AirPlay Receiver)")
     ap.add_argument("--speed", type=float, default=600.0,
                     help="how much faster fridge time runs than real time (default 600: 1 s = 10 min)")
     ap.add_argument("--demo", action="store_true", help="start with a few items of different ages")
@@ -161,7 +162,10 @@ def main() -> None:
     camera = FakeCamera(fridge)
     threading.Thread(target=fake_sensors, args=(fridge,), daemon=True).start()
 
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(fridge, camera, args.speed))
+    try:
+        server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(fridge, camera, args.speed))
+    except OSError as exc:
+        sys.exit(f"Port {args.port} is busy ({exc}). Try another one: python sim/run_sim.py --port 8080")
     print(f"Fridge Guardian simulator on http://localhost:{args.port}  (time x{args.speed:g}, Ctrl+C to stop)")
     try:
         server.serve_forever()

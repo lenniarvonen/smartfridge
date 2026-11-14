@@ -24,7 +24,7 @@ Needs Python 3.10 or newer, nothing else.
 python sim/run_sim.py --demo
 ```
 
-Open http://localhost:7000. Click the simulator buttons to "show" items to the camera. Fridge time runs 600x faster than real time (change with `--speed`), so you can watch items move from fresh to eat soon to past shelf life within a few minutes.
+Open http://localhost:8000. (Not 7000: on a Mac, AirPlay Receiver uses that port.) Click the simulator buttons to "show" items to the camera. Fridge time runs 600x faster than real time (change with `--speed`), so you can watch items move from fresh to eat soon to past shelf life within a few minutes.
 
 Run the tests with `python -m pytest tests`.
 
