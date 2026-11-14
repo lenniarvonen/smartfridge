@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fridge Guardian</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="logo">❄</span>
+        <div>
+          <h1>Fridge Guardian</h1>
+          <p class="sub">Edge AI on Arduino UNO Q · nothing leaves this fridge</p>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip" id="chipTemp">— °C</span>
+        <span class="chip" id="chipHum">— %</span>
+        <span class="chip" id="chipDoor">Door —</span>
+        <span class="chip conn" id="chipConn">Connecting…</span>
+      </div>
+    </header>
+
+    <section class="banner" id="banner">
+      <div class="banner-main">
+        <div class="banner-label" id="bannerLabel">Waiting for data</div>
+        <div class="banner-text" id="bannerText">Show food to the camera to start tracking.</div>
+      </div>
+      <div class="counts">
+        <div class="count fresh"><b id="cFresh">0</b><span>fresh</span></div>
+        <div class="count eat_soon"><b id="cSoon">0</b><span>eat soon</span></div>
+        <div class="count expired"><b id="cExpired">0</b><span>past shelf life</span></div>
+      </div>
+    </section>
+
+    <main class="grid">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Camera at the door</h2>
+          <div class="mode" role="group" aria-label="Mode">
+            <button id="modeIn" class="seg active">Putting in</button>
+            <button id="modeOut" class="seg">Taking out</button>
+          </div>
+        </div>
+        <div class="video" id="videoBox">
+          <div class="video-placeholder" id="videoPlaceholder">Looking for the camera stream…</div>
+          <iframe id="videoFrame" title="Camera stream" style="display: none"></iframe>
+        </div>
+        <div class="seen" id="seen">Camera sees: —</div>
+        <div class="sim" id="simBox" style="display: none">
+          <h3>Simulator: show an item to the camera</h3>
+          <div class="sim-buttons" id="simButtons"></div>
+          <p class="sim-note" id="simNote"></p>
+        </div>
+
+        <form class="add" id="addForm">
+          <h3>Add by hand</h3>
+          <div class="add-row">
+            <input id="addLabel" list="labels" placeholder="Item, e.g. milk" required />
+            <datalist id="labels"></datalist>
+            <input id="addDays" type="number" min="0.1" step="0.5" placeholder="Days" title="Shelf life in days (optional)" />
+            <button type="submit" class="primary">Add</button>
+          </div>
+        </form>
+
+        <div class="events">
+          <h3>Activity</h3>
+          <ul id="events"></ul>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>In the fridge</h2>
+          <button id="clearBtn" class="ghost">Clear all</button>
+        </div>
+        <p class="hint">Sorted by time left. The bar shows how much of each item's shelf life has been used.</p>
+        <ul class="items" id="items"></ul>
+        <div class="empty" id="emptyMsg">Nothing tracked yet.</div>
+      </section>
+    </main>
+
+    <footer>Shelf life values are rough defaults for ranking what to eat first, not food-safety advice. Click a number to change it.</footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
